@@ -6,8 +6,7 @@ Friendly 7x7 matrix helper for the Pixiboo classroom device. Pupils interact wit
 
 ```python
 import mip
-mip.install("github:tessaract/pixiboo-micropython")
-```
+mip.install("https://raw.githubusercontent.com/Tesax123/pixiboo-micropython/main/mip.json")```
 
 ## Quick start
 
