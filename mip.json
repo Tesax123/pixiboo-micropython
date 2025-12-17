@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0",
+  "files": [
+    "pixiboo/__init__.py",
+    "pixiboo/colors.py",
+    "pixiboo/sprites.py",
+    "pixiboo/hardware.py",
+    "pixiboo/matrix.py",
+    "pixiboo/buttons.py",
+    "pixiboo/buzzer.py",
+    "examples/hello_pixel.py",
+    "examples/draw_heart.py",
+    "examples/brightness_demo.py",
+    "README.md",
+    "LICENSE"
+  ],
+  "deps": []
+}
+
