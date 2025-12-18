@@ -17,11 +17,13 @@ from .colors import (
     CYAN,
 )
 from .sprites import HEART
+from .buttons import Buttons
 
 m = Matrix()
 
 __all__ = [
     "Matrix",
+    "Buttons",
     "m",
     "set_brightness",
     "BLACK",

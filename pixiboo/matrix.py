@@ -72,23 +72,27 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
 _default_brightness = 0.2
 
 
-class _ColumnProxy:
-    def __init__(self, matrix: "Matrix", x: int):
+class _RowProxy:
+    """
+    Allows row-first access: m[row][column].
+    """
+
+    def __init__(self, matrix: "Matrix", y: int):
         self._matrix = matrix
-        self._x = x
+        self._y = y
 
-    def __getitem__(self, y: int):
-        return self._matrix._get_pixel(self._x, y)
+    def __getitem__(self, x: int):
+        return self._matrix._get_pixel(x, self._y)
 
-    def __setitem__(self, y: int, color):
-        self._matrix._set_pixel(self._x, y, color)
+    def __setitem__(self, x: int, color):
+        self._matrix._set_pixel(x, self._y, color)
 
 
-class _NullColumn:
-    def __getitem__(self, _y):
+class _NullRow:
+    def __getitem__(self, _x):
         return BLACK
 
-    def __setitem__(self, _y, _color):
+    def __setitem__(self, _x, _color):
         return None
 
 
@@ -103,15 +107,18 @@ class Matrix:
         self._np = neopixel.NeoPixel(Pin(LED_PIN), NUM_LEDS)
         self._instances.append(self)
 
-    def __getitem__(self, x: int):
-        if 0 <= x < self.WIDTH:
-            return _ColumnProxy(self, x)
-        return _NullColumn()
+    def __getitem__(self, y: int):
+        """
+        Row-first indexing: m[row][column].
+        """
+        if 0 <= y < self.HEIGHT:
+            return _RowProxy(self, y)
+        return _NullRow()
 
-    def __setitem__(self, x: int, value):
-        # Allow m[x] = color to fill a column
-        if 0 <= x < self.WIDTH:
-            for y in range(self.HEIGHT):
+    def __setitem__(self, y: int, value):
+        # Allow m[row] = color to fill a row
+        if 0 <= y < self.HEIGHT:
+            for x in range(self.WIDTH):
                 self._set_pixel(x, y, value)
 
     def _get_pixel(self, x: int, y: int):
@@ -132,7 +139,10 @@ class Matrix:
         """
         for y in range(self.HEIGHT):
             for x in range(self.WIDTH):
-                logical = y * self.WIDTH + x
+                # Hardware is wired right-to-left; mirror the X axis so
+                # m[row][column] matches visual left-to-right.
+                x_hw = (self.WIDTH - 1) - x
+                logical = y * self.WIDTH + x_hw
                 physical = (NUM_LEDS - 1) - logical
                 self._np[physical] = self._apply_brightness(self._m[y][x])
         self._np.write()

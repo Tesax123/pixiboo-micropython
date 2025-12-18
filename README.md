@@ -2,6 +2,8 @@
 
 Friendly 7x7 matrix helper for the Pixiboo classroom device. Pupils interact with a tiny API that hides pins, NeoPixel setup, and RGB tuples.
 
+**License:** All rights reserved. Redistribution or reuse without permission is not allowed.
+
 ## Installation (via mip)
 
 ```python
@@ -17,6 +19,7 @@ m = Matrix()
 set_brightness(0.3)
 
 m.clear()
+# Indexing is row first, then column
 m[3][3] = BLUE
 
 m.draw(HEART)
@@ -49,4 +52,7 @@ High-level steps (no commands yet):
 - `examples/hello_pixel.py` — set one pixel
 - `examples/draw_heart.py` — draw the heart sprite
 - `examples/brightness_demo.py` — cycle brightness
+- `examples/buttons_demo.py` — light up colors on button presses
+- `examples/buttons_move_pixel.py` — move center pixel left/right, change color
+
 
