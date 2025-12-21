@@ -18,13 +18,22 @@ from .colors import (
 )
 from .sprites import HEART
 from .buttons import Buttons
+from .buzzer import Buzzer
 
 m = Matrix()
+b = Buzzer()
+# Aliases for convenience
+matrix = m
+buzzer = b
 
 __all__ = [
     "Matrix",
     "Buttons",
+    "Buzzer",
     "m",
+    "b",
+    "matrix",
+    "buzzer",
     "set_brightness",
     "BLACK",
     "RED",
