@@ -13,6 +13,7 @@ YELLOW = (255, 255, 0)
 ORANGE = (255, 165, 0)
 PURPLE = (128, 0, 128)
 CYAN = (170, 216, 245)
+PINK = (255, 192, 203)
 
 __all__ = [
     "BLACK",
@@ -24,5 +25,6 @@ __all__ = [
     "ORANGE",
     "PURPLE",
     "CYAN",
+    "PINK",
 ]
 

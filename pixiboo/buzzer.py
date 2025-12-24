@@ -41,6 +41,8 @@ def _sleep_ms(ms: int) -> None:
 class Buzzer:
     def __init__(self):
         self._pwm = PWM(Pin(BUZZER_PIN))
+        # Ensure the buzzer is silent immediately after construction.
+        self._pwm.duty(0)
         self._stopped = True
 
     def play(self, melody) -> None:

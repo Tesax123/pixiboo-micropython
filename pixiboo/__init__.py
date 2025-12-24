@@ -15,6 +15,7 @@ from .colors import (
     ORANGE,
     PURPLE,
     CYAN,
+    PINK,
 )
 from .sprites import HEART
 from .buttons import Buttons
@@ -44,6 +45,7 @@ __all__ = [
     "ORANGE",
     "PURPLE",
     "CYAN",
+    "PINK",
     "HEART",
 ]
 
