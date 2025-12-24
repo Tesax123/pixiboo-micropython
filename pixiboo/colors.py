@@ -4,16 +4,16 @@ Named colors for Pixiboo.
 Pupils never see RGB tuples directly.
 """
 
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+BLACK = (26, 26, 26)
+RED = (239, 68, 68)
+GREEN = (34, 197, 94)
+BLUE = (59, 130, 246)
 WHITE = (255, 255, 255)
-YELLOW = (255, 255, 0)
-ORANGE = (255, 165, 0)
-PURPLE = (128, 0, 128)
-CYAN = (170, 216, 245)
-PINK = (255, 192, 203)
+YELLOW = (234, 179, 8)
+ORANGE = (249, 115, 22)
+PURPLE = (168, 85, 247)
+CYAN = (6, 182, 212)
+PINK = (236, 72, 153)
 
 __all__ = [
     "BLACK",
