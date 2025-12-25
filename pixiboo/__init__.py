@@ -20,21 +20,27 @@ from .colors import (
 from .sprites import HEART
 from .buttons import Buttons
 from .buzzer import Buzzer
+from .eyes import EyeLEDs
 
 m = Matrix()
 b = Buzzer()
+e = EyeLEDs()
 # Aliases for convenience
 matrix = m
 buzzer = b
+eyes = e
 
 __all__ = [
     "Matrix",
     "Buttons",
     "Buzzer",
+    "EyeLEDs",
     "m",
     "b",
+    "e",
     "matrix",
     "buzzer",
+    "eyes",
     "set_brightness",
     "BLACK",
     "RED",

@@ -13,6 +13,9 @@ BUTTON_RIGHT = 13
 
 BUZZER_PIN = 38
 
+EYE_LEFT_PIN = 21
+EYE_RIGHT_PIN = 14
+
 __all__ = [
     "LED_PIN",
     "NUM_LEDS",
@@ -20,5 +23,7 @@ __all__ = [
     "BUTTON_CENTER",
     "BUTTON_RIGHT",
     "BUZZER_PIN",
+    "EYE_LEFT_PIN",
+    "EYE_RIGHT_PIN",
 ]
 
