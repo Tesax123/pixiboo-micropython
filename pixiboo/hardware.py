@@ -16,6 +16,16 @@ BUZZER_PIN = 38
 EYE_LEFT_PIN = 21
 EYE_RIGHT_PIN = 14
 
+# Light sensor pin
+LIGHT_SENSOR_PIN = 17
+
+# I2C pins for external IMU
+I2C_SCL_PIN = 15
+I2C_SDA_PIN = 16
+IMU_RESET_PIN = 48
+IMU_INTERRUPT_PIN = 47
+IMU_ADDRESS_SELECT_PIN = 45
+
 __all__ = [
     "LED_PIN",
     "NUM_LEDS",
@@ -25,5 +35,11 @@ __all__ = [
     "BUZZER_PIN",
     "EYE_LEFT_PIN",
     "EYE_RIGHT_PIN",
+    "LIGHT_SENSOR_PIN",
+    "I2C_SCL_PIN",
+    "I2C_SDA_PIN",
+    "IMU_RESET_PIN",
+    "IMU_INTERRUPT_PIN",
+    "IMU_ADDRESS_SELECT_PIN",
 ]
 

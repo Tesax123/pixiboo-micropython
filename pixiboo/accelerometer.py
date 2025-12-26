@@ -1,0 +1,376 @@
+# """
+# Accelerometer access for Pixiboo, similar to micro:bit API.
+
+# Supports common I2C accelerometers/IMUs like MPU6050, MPU9250, LSM6DS3.
+# """
+
+# from .hardware import I2C_SCL_PIN, I2C_SDA_PIN, IMU_RESET_PIN
+
+# try:
+#     from machine import Pin, I2C
+# except ImportError:  # pragma: no cover - host fallback
+#     class Pin:  # type: ignore
+#         OUT = 1
+
+#         def __init__(self, *_, **__):
+#             pass
+
+#         def value(self, val=None):
+#             if val is None:
+#                 return 0
+#             return None
+
+#     class I2C:  # type: ignore
+#         def __init__(self, *_, **__):
+#             self._x = 0
+#             self._y = 0
+#             self._z = 0
+
+#         def readfrom_mem(self, addr, reg, nbytes):
+#             return bytes([0] * nbytes)
+
+#         def writeto_mem(self, addr, reg, buf):
+#             pass
+
+#         def scan(self):
+#             return []
+
+# try:
+#     import utime as _time
+#     import math
+# except ImportError:  # pragma: no cover
+#     import time as _time
+#     try:
+#         import math
+#     except ImportError:
+#         # Fallback if math not available
+#         import sys
+#         math = sys.modules.get('math', None)
+
+
+# def _sleep_ms(ms: int) -> None:
+#     if hasattr(_time, "sleep_ms"):
+#         _time.sleep_ms(ms)  # type: ignore[attr-defined]
+#     else:
+#         _time.sleep(ms / 1000.0)
+
+
+# # Common IMU I2C addresses
+# MPU6050_ADDR = 0x68
+# MPU6050_ADDR_ALT = 0x69
+# LSM6DS3_ADDR = 0x6A
+# MPU9250_ADDR = 0x68
+# BNO055_ADDR = 0x28
+# BNO055_ADDR_ALT = 0x29
+
+# # MPU6050 register addresses
+# MPU6050_REG_PWR_MGMT_1 = 0x6B
+# MPU6050_REG_ACCEL_XOUT_H = 0x3B
+# MPU6050_REG_WHO_AM_I = 0x75
+
+# # LSM6DS3 register addresses
+# LSM6DS3_REG_CTRL1_XL = 0x10
+# LSM6DS3_REG_OUTX_L_XL = 0x28
+# LSM6DS3_REG_WHO_AM_I = 0x0F
+
+# # BNO055 register addresses
+# BNO055_REG_CHIP_ID = 0x00
+# BNO055_REG_OPR_MODE = 0x3D
+# BNO055_REG_PWR_MODE = 0x3E
+# BNO055_REG_ACCEL_DATA_X_LSB = 0x08
+# BNO055_REG_ACCEL_DATA_X_MSB = 0x09
+# BNO055_REG_ACCEL_DATA_Y_LSB = 0x0A
+# BNO055_REG_ACCEL_DATA_Y_MSB = 0x0B
+# BNO055_REG_ACCEL_DATA_Z_LSB = 0x0C
+# BNO055_REG_ACCEL_DATA_Z_MSB = 0x0D
+
+# # BNO055 constants
+# BNO055_ID = 0xA0
+# BNO055_OPERATION_MODE_NDOF = 0x0C  # 9-DOF fusion mode
+# BNO055_POWER_MODE_NORMAL = 0x00
+
+
+# class Accelerometer:
+#     """
+#     Accelerometer interface similar to micro:bit API.
+    
+#     Returns acceleration values in milli-g (mg) units, similar to micro:bit.
+#     Values typically range from -2000 to +2000 mg (±2g range).
+#     """
+
+#     def __init__(self, i2c_freq: int = 400000):
+#         """
+#         Initialize the accelerometer.
+        
+#         Args:
+#             i2c_freq: I2C bus frequency in Hz (default 400kHz)
+#         """
+#         self._i2c = I2C(0, scl=Pin(I2C_SCL_PIN), sda=Pin(I2C_SDA_PIN), freq=i2c_freq)
+#         self._addr = None
+#         self._imu_type = None
+        
+#         # Initialize reset pin if available
+#         try:
+#             self._reset_pin = Pin(IMU_RESET_PIN, Pin.OUT)
+#             self._reset_pin.value(0)
+#             _sleep_ms(10)
+#             self._reset_pin.value(1)
+#             _sleep_ms(10)
+#         except Exception:
+#             pass
+        
+#         # Auto-detect IMU
+#         self._detect_imu()
+        
+#         # Calibration offsets (can be set by user)
+#         self._offset_x = 0
+#         self._offset_y = 0
+#         self._offset_z = 0
+        
+#         # Last read values
+#         self._x = 0
+#         self._y = 0
+#         self._z = 0
+
+#     def _detect_imu(self) -> None:
+#         """Auto-detect which IMU is connected."""
+#         devices = self._i2c.scan()
+        
+#         print(f"[Accelerometer] I2C scan found devices: {[hex(d) for d in devices]}")
+        
+#         if not devices:
+#             # No I2C device found
+#             print("[Accelerometer] ERROR: No I2C devices found!")
+#             print("[Accelerometer] Check:")
+#             print("  - Is the BNO055 powered (VCC/GND connected)?")
+#             print("  - Are I2C pins correct (SDA=GPIO16, SCL=GPIO15)?")
+#             print("  - Are pullup resistors present on SDA/SCL?")
+#             raise RuntimeError("No accelerometer detected on I2C bus")
+        
+#         # Try BNO055 first (Pixiboo uses this!)
+#         if BNO055_ADDR in devices:
+#             self._addr = BNO055_ADDR
+#             self._imu_type = "bno055"
+#             print(f"[Accelerometer] Detected BNO055 at address {hex(self._addr)}")
+#             self._init_bno055()
+#         elif BNO055_ADDR_ALT in devices:
+#             self._addr = BNO055_ADDR_ALT
+#             self._imu_type = "bno055"
+#             print(f"[Accelerometer] Detected BNO055 at alternate address {hex(self._addr)}")
+#             self._init_bno055()
+#         # Try MPU6050/MPU9250
+#         elif MPU6050_ADDR in devices:
+#             self._addr = MPU6050_ADDR
+#             self._imu_type = "mpu6050"
+#             print(f"[Accelerometer] Detected MPU6050 at address {hex(self._addr)}")
+#             self._init_mpu6050()
+#         elif MPU6050_ADDR_ALT in devices:
+#             self._addr = MPU6050_ADDR_ALT
+#             self._imu_type = "mpu6050"
+#             print(f"[Accelerometer] Detected MPU6050 at alternate address {hex(self._addr)}")
+#             self._init_mpu6050()
+#         elif LSM6DS3_ADDR in devices:
+#             self._addr = LSM6DS3_ADDR
+#             self._imu_type = "lsm6ds3"
+#             print(f"[Accelerometer] Detected LSM6DS3 at address {hex(self._addr)}")
+#             self._init_lsm6ds3()
+#         else:
+#             # Unknown device
+#             print(f"[Accelerometer] ERROR: Unknown I2C device at {[hex(d) for d in devices]}")
+#             print("[Accelerometer] Expected BNO055 at 0x28 or 0x29")
+#             raise RuntimeError(f"Unknown accelerometer at address {[hex(d) for d in devices]}")
+
+#     def _init_mpu6050(self) -> None:
+#         """Initialize MPU6050/MPU9250."""
+#         # Wake up the MPU6050 (clear sleep mode)
+#         self._i2c.writeto_mem(self._addr, MPU6050_REG_PWR_MGMT_1, bytes([0]))
+#         _sleep_ms(10)
+
+#     def _init_lsm6ds3(self) -> None:
+#         """Initialize LSM6DS3."""
+#         # Enable accelerometer at 104 Hz, ±2g range
+#         self._i2c.writeto_mem(self._addr, LSM6DS3_REG_CTRL1_XL, bytes([0x40]))
+#         _sleep_ms(10)
+
+#     def _init_bno055(self) -> None:
+#         """Initialize BNO055."""
+#         # Verify chip ID
+#         try:
+#             chip_id = self._i2c.readfrom_mem(self._addr, BNO055_REG_CHIP_ID, 1)[0]
+#             print(f"[Accelerometer] BNO055 Chip ID: {hex(chip_id)} (expected {hex(BNO055_ID)})")
+#         except Exception as e:
+#             print(f"[Accelerometer] Failed to read BNO055 chip ID: {e}")
+        
+#         # Set to config mode (required before changing settings)
+#         self._i2c.writeto_mem(self._addr, BNO055_REG_OPR_MODE, bytes([0x00]))
+#         _sleep_ms(25)
+        
+#         # Set to normal power mode
+#         self._i2c.writeto_mem(self._addr, BNO055_REG_PWR_MODE, bytes([BNO055_POWER_MODE_NORMAL]))
+#         _sleep_ms(10)
+        
+#         # Set to NDOF mode (9-DOF fusion mode with accelerometer, gyro, magnetometer)
+#         self._i2c.writeto_mem(self._addr, BNO055_REG_OPR_MODE, bytes([BNO055_OPERATION_MODE_NDOF]))
+#         _sleep_ms(20)
+        
+#         print("[Accelerometer] BNO055 initialized in NDOF mode")
+
+#     def _read_mpu6050(self) -> tuple[int, int, int]:
+#         """Read acceleration from MPU6050/MPU9250."""
+#         # Read 6 bytes starting from ACCEL_XOUT_H
+#         data = self._i2c.readfrom_mem(self._addr, MPU6050_REG_ACCEL_XOUT_H, 6)
+        
+#         # Convert to signed 16-bit values
+#         x = (data[0] << 8) | data[1]
+#         y = (data[2] << 8) | data[3]
+#         z = (data[4] << 8) | data[5]
+        
+#         # Convert to signed integers
+#         if x > 32767:
+#             x -= 65536
+#         if y > 32767:
+#             y -= 65536
+#         if z > 32767:
+#             z -= 65536
+        
+#         # Convert from raw values (±16384 = ±2g) to milli-g
+#         # Scale factor: 2000 mg / 16384 = 0.122 mg/LSB
+#         x_mg = int(x * 0.122)
+#         y_mg = int(y * 0.122)
+#         z_mg = int(z * 0.122)
+        
+#         return (x_mg, y_mg, z_mg)
+
+#     def _read_lsm6ds3(self) -> tuple[int, int, int]:
+#         """Read acceleration from LSM6DS3."""
+#         # Read 6 bytes starting from OUTX_L_XL
+#         data = self._i2c.readfrom_mem(self._addr, LSM6DS3_REG_OUTX_L_XL, 6)
+        
+#         # LSM6DS3 is little-endian
+#         x = (data[1] << 8) | data[0]
+#         y = (data[3] << 8) | data[2]
+#         z = (data[5] << 8) | data[4]
+        
+#         # Convert to signed integers
+#         if x > 32767:
+#             x -= 65536
+#         if y > 32767:
+#             y -= 65536
+#         if z > 32767:
+#             z -= 65536
+        
+#         # Convert from raw values (±16384 = ±2g) to milli-g
+#         x_mg = int(x * 0.122)
+#         y_mg = int(y * 0.122)
+#         z_mg = int(z * 0.122)
+        
+#         return (x_mg, y_mg, z_mg)
+
+#     def _read_bno055(self) -> tuple[int, int, int]:
+#         """Read acceleration from BNO055."""
+#         # Read 6 bytes starting from ACCEL_DATA_X_LSB
+#         data = self._i2c.readfrom_mem(self._addr, BNO055_REG_ACCEL_DATA_X_LSB, 6)
+        
+#         # BNO055 is little-endian
+#         x = (data[1] << 8) | data[0]
+#         y = (data[3] << 8) | data[2]
+#         z = (data[5] << 8) | data[4]
+        
+#         # Convert to signed integers
+#         if x > 32767:
+#             x -= 65536
+#         if y > 32767:
+#             y -= 65536
+#         if z > 32767:
+#             z -= 65536
+        
+#         # BNO055 accelerometer data is in m/s²
+#         # 1 m/s² = ~102 mg (milligravity)
+#         # BNO055 scale: 1 LSB = 0.01 m/s² = 1.02 mg
+#         # So multiply by ~1.02 to convert to mg
+#         # Or more accurately: 100 m/s² = 1g = 1000 mg, so 1 m/s² = 102 mg
+#         # BNO055 LSB = 0.01 m/s², so 1 LSB = 1.02 mg
+#         x_mg = int(x * 1.02)
+#         y_mg = int(y * 1.02)
+#         z_mg = int(z * 1.02)
+        
+#         return (x_mg, y_mg, z_mg)
+
+#     def _read_raw(self) -> tuple[int, int, int]:
+#         """Read raw acceleration values from the IMU."""
+#         if self._imu_type == "bno055":
+#             return self._read_bno055()
+#         elif self._imu_type == "mpu6050":
+#             return self._read_mpu6050()
+#         elif self._imu_type == "lsm6ds3":
+#             return self._read_lsm6ds3()
+#         else:
+#             raise RuntimeError("No accelerometer initialized")
+
+#     def get_x(self) -> int:
+#         """
+#         Get acceleration in X axis in milli-g (mg).
+        
+#         Returns:
+#             Acceleration value in mg, typically -2000 to +2000
+#         """
+#         self._x, self._y, self._z = self._read_raw()
+#         return self._x - self._offset_x
+
+#     def get_y(self) -> int:
+#         """
+#         Get acceleration in Y axis in milli-g (mg).
+        
+#         Returns:
+#             Acceleration value in mg, typically -2000 to +2000
+#         """
+#         self._x, self._y, self._z = self._read_raw()
+#         return self._y - self._offset_y
+
+#     def get_z(self) -> int:
+#         """
+#         Get acceleration in Z axis in milli-g (mg).
+        
+#         Returns:
+#             Acceleration value in mg, typically -2000 to +2000
+#         """
+#         self._x, self._y, self._z = self._read_raw()
+#         return self._z - self._offset_z
+
+#     def get_values(self) -> tuple[int, int, int]:
+#         """
+#         Get acceleration values for all axes as a tuple (x, y, z).
+        
+#         Returns:
+#             Tuple of (x, y, z) acceleration values in mg
+#         """
+#         self._x, self._y, self._z = self._read_raw()
+#         return (
+#             self._x - self._offset_x,
+#             self._y - self._offset_y,
+#             self._z - self._offset_z,
+#         )
+
+#     def calibrate(self) -> None:
+#         """
+#         Calibrate the accelerometer by assuming it's at rest.
+#         This sets the current orientation as the zero point.
+#         """
+#         # Take multiple samples and average
+#         samples = 10
+#         sum_x, sum_y, sum_z = 0, 0, 0
+        
+#         for _ in range(samples):
+#             x, y, z = self._read_raw()
+#             sum_x += x
+#             sum_y += y
+#             sum_z += z
+#             _sleep_ms(10)
+        
+#         self._offset_x = sum_x // samples
+#         self._offset_y = sum_y // samples
+#         self._offset_z = sum_z // samples - 1000  # Assume gravity on Z axis
+
+
+# __all__ = ["Accelerometer"]
+
