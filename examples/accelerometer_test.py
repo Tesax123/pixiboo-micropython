@@ -5,7 +5,7 @@ Simply reads and displays accelerometer data to verify it's working.
 No LED matrix, just debug output.
 """
 
-from pixiboo import accelerometer
+import pixiboo
 import time
 
 def main():
@@ -13,12 +13,25 @@ def main():
     print("Accelerometer Raw Data Test")
     print("=" * 60)
     
+    # Initialize accelerometer (must be done after import)
+    print("\nInitializing accelerometer...")
+    accelerometer = pixiboo.init_accelerometer()
+    
+    # Check if accelerometer is available
+    if accelerometer is None:
+        print("\n✗ ERROR: Accelerometer initialization failed!")
+        print("The BNO055 was not detected.")
+        print("\nTroubleshooting:")
+        print("  1. Run: %Run examples/i2c_scanner.py")
+        print("  2. Check if BNO055 is found at 0x28 or 0x29")
+        print("  3. If found, press RESET on Pixiboo and try again")
+        return
+    
     # Check accelerometer status
-    print(f"\nAccelerometer type: {accelerometer._imu_type}")
+    print(f"\n✓ Accelerometer initialized!")
+    print(f"Type: {accelerometer._imu_type}")
     if accelerometer._addr:
         print(f"I2C address: {hex(accelerometer._addr)}")
-    else:
-        print("No I2C device - running in dummy/simulation mode")
     
     print("\nReading accelerometer data...")
     print("Format: X (left/right), Y (forward/back), Z (up/down)")
@@ -74,6 +87,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
