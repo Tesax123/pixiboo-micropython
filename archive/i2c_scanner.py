@@ -8,15 +8,53 @@ Helps debug accelerometer connection issues.
 from machine import Pin, I2C
 import time
 
+# Optional: toggle IMU reset if wired. Safe if not connected.
+try:
+    from pixiboo.hardware import IMU_RESET_PIN
+except Exception:
+    IMU_RESET_PIN = None
+
+# Optional: force address select low (0x28) if exposed.
+try:
+    from pixiboo.hardware import IMU_ADDRESS_SELECT_PIN
+except Exception:
+    IMU_ADDRESS_SELECT_PIN = None
+
 def scan_i2c():
     """Scan I2C bus and display found devices."""
     print("=" * 60)
     print("Pixiboo I2C Scanner")
     print("=" * 60)
     
-    # I2C pins from hardware.py
+    # I2C pins from hardware.py (Pixiboo external IMU header)
     SCL_PIN = 15
     SDA_PIN = 16
+
+    # Give the BNO055 time to boot after power/reset
+    print("\nBoot delay: waiting 1.0s for IMU to power up...")
+    time.sleep(1.0)
+
+    # Try to force address select to 0x28 (low) if available
+    if IMU_ADDRESS_SELECT_PIN is not None:
+        try:
+            adr = Pin(IMU_ADDRESS_SELECT_PIN, Pin.OUT)
+            adr.value(0)
+            time.sleep(0.01)
+            print(f"Address-select pin {IMU_ADDRESS_SELECT_PIN} set LOW (0x28)")
+        except Exception as e:
+            print(f"(Address-select toggle skipped: {e})")
+
+    # Try to release reset if the pin is available
+    if IMU_RESET_PIN is not None:
+        try:
+            rst = Pin(IMU_RESET_PIN, Pin.OUT)
+            rst.value(0)
+            time.sleep(0.01)
+            rst.value(1)
+            time.sleep(0.05)
+            print(f"Reset pin {IMU_RESET_PIN} toggled before scan")
+        except Exception as e:
+            print(f"(Reset pin toggle skipped: {e})")
     
     print(f"\nI2C Configuration:")
     print(f"  SCL: GPIO{SCL_PIN}")
@@ -24,10 +62,11 @@ def scan_i2c():
     print(f"  Frequency: 400kHz")
     
     # Try different I2C configurations
+    # Start with 100kHz since brute-force scanner confirmed that works
     configs = [
-        {"id": 0, "freq": 400000, "name": "I2C0 @ 400kHz"},
         {"id": 0, "freq": 100000, "name": "I2C0 @ 100kHz"},
-        {"id": 1, "freq": 400000, "name": "I2C1 @ 400kHz"},
+        {"id": 0, "freq": 400000, "name": "I2C0 @ 400kHz"},
+        {"id": 1, "freq": 100000, "name": "I2C1 @ 100kHz"},
     ]
     
     for config in configs:
@@ -78,6 +117,4 @@ def get_device_name(addr):
 
 if __name__ == "__main__":
     scan_i2c()
-
-
 
