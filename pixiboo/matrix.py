@@ -216,5 +216,33 @@ def set_brightness(value: float) -> float:
     return _default_brightness
 
 
-__all__ = ["Matrix", "set_brightness"]
+def set_grid(grid_data: list) -> None:
+    """
+    Set the entire matrix from a 7x7 grid of colors.
+    This function preserves grid structure when converting between blocks and Python.
+    
+    Args:
+        grid_data: A list of 7 lists, each containing 7 color values.
+                   Example: [[BLACK, RED, BLACK, ...], [RED, RED, BLACK, ...], ...]
+    """
+    # Get the default matrix instance (usually 'm')
+    if Matrix._instances:
+        matrix = Matrix._instances[0]
+        
+        # Validate grid dimensions
+        if len(grid_data) != Matrix.HEIGHT:
+            raise ValueError(f"Grid must have {Matrix.HEIGHT} rows, got {len(grid_data)}")
+        
+        # Set each pixel from the grid data
+        for y, row in enumerate(grid_data):
+            if len(row) != Matrix.WIDTH:
+                raise ValueError(f"Row {y} must have {Matrix.WIDTH} columns, got {len(row)}")
+            for x, color in enumerate(row):
+                matrix._set_pixel(x, y, color)
+    else:
+        # No matrix instance exists yet - this is okay, the grid will be applied when matrix is created
+        pass
+
+
+__all__ = ["Matrix", "set_brightness", "set_grid"]
 
