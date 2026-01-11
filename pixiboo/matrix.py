@@ -4,6 +4,7 @@ Friendly 7x7 matrix wrapper for the Pixiboo board.
 
 from .colors import BLACK, RED
 from .hardware import LED_PIN, NUM_LEDS
+from .font import get_char_pattern
 
 try:
     from machine import Pin
@@ -188,6 +189,39 @@ class Matrix:
         self.show()
         if delay:
             _sleep_ms(delay)
+
+    def display(self, text: str, color=RED, delay: int = 600) -> None:
+        """
+        Display characters of a string one by one with a flashing effect.
+        Similar to micro:bit's display.show() behavior.
+        
+        Args:
+            text: String to display character by character
+            color: Color to display characters in (default: RED)
+            delay: Milliseconds to show each character (default: 600ms)
+        
+        Example:
+            m.display("HELLO")  # Shows H, then E, then L, then L, then O
+        """
+        for char in text:
+            # Get the character pattern (7x7, uses full matrix)
+            pattern = get_char_pattern(char)
+            
+            # Display the character
+            for y, row in enumerate(pattern):
+                for x, ch in enumerate(row):
+                    if ch == "1":
+                        self._set_pixel(x, y, color)
+                    else:
+                        self._set_pixel(x, y, BLACK)
+            self.show()
+            
+            # Show character for delay milliseconds
+            _sleep_ms(delay)
+            
+            # Clear the screen for flashing effect
+            self.clear()
+            _sleep_ms(100)  # Brief pause between characters
 
     @property
     def brightness(self) -> float:

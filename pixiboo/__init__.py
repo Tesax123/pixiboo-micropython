@@ -81,6 +81,23 @@ def is_pressed(button: str) -> bool:
     """
     return buttons.is_pressed(button)
 
+def display(text: str, color=RED, delay: int = 600):
+    """
+    Display characters of a string one by one with a flashing effect.
+    Similar to micro:bit's display.show() behavior.
+    
+    Args:
+        text: String to display character by character
+        color: Color to display characters in (default: RED)
+        delay: Milliseconds to show each character (default: 600ms)
+    
+    Example:
+        display("HELLO")  # Shows H, then E, then L, then L, then O
+        display("Tessa", BLUE)  # Blue text
+        display("TEST", GREEN, 500)  # Green text, custom speed
+    """
+    m.display(text, color, delay)
+
 # Aliases for convenience
 matrix = m
 buzzer = b
@@ -106,6 +123,7 @@ __all__ = [
     "is_pressed",
     "on_shake",
     "set_brightness",
+    "display",
     "BLACK",
     "RED",
     "GREEN",
