@@ -9,6 +9,7 @@
     "pixiboo/buttons.py",
     "pixiboo/buzzer.py",
     "pixiboo/eyes.py",
+    "pixiboo/accelerometer.py",
     "examples/hello_pixel.py",
     "examples/draw_heart.py",
     "examples/brightness_demo.py",
