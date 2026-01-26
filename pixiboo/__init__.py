@@ -4,7 +4,7 @@ Pixiboo public API surface.
 Only export the friendly symbols pupils use; hide hardware details.
 """
 
-from .matrix import Matrix, set_brightness
+from .matrix import Matrix, set_brightness, set_grid
 from .colors import (
     BLACK,
     RED,
@@ -123,6 +123,7 @@ __all__ = [
     "is_pressed",
     "on_shake",
     "set_brightness",
+    "set_grid",
     "display",
     "BLACK",
     "RED",

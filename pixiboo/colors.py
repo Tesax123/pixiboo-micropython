@@ -12,7 +12,7 @@ WHITE = (255, 255, 255)
 YELLOW = (234, 179, 8)
 ORANGE = (249, 115, 22)
 PURPLE = (168, 85, 247)
-CYAN = (6, 182, 212)
+CYAN = (20, 200, 220)  # Increased red channel to maintain distinction from BLUE at low brightness
 PINK = (236, 72, 153)
 
 __all__ = [

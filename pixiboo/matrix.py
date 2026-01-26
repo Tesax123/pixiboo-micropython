@@ -70,7 +70,12 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     return value
 
 
-_default_brightness = 0.2
+# Default brightness: 0.8 (80% of the safe maximum)
+# Note: We cap hardware brightness at 25% to prevent LED damage.
+# User-facing brightness of 1.0 = 25% hardware brightness (maximum safe level)
+# User-facing brightness of 0.8 = 20% hardware brightness (comfortable default)
+_default_brightness = 0.8
+_hardware_brightness_cap = 0.25  # Cap hardware at 25% to protect LEDs
 
 
 class _RowProxy:
@@ -132,7 +137,19 @@ class Matrix:
             self._m[y][x] = color
 
     def _apply_brightness(self, color):
-        return tuple(int(channel * self.brightness) for channel in color)
+        # Scale user brightness (0.0-1.0) to hardware brightness (0.0-0.25 max)
+        # This protects the LEDs by capping at 25% hardware brightness
+        hardware_brightness = self.brightness * _hardware_brightness_cap
+        
+        # Support both 3-tuple (R, G, B) and 4-tuple (R, G, B, per_pixel_brightness)
+        if len(color) == 4:
+            r, g, b, per_pixel_brightness = color
+            # Apply per-pixel brightness multiplier, then global brightness
+            pixel_brightness = hardware_brightness * _clamp(per_pixel_brightness, 0.0, 1.0)
+            return (int(r * pixel_brightness), int(g * pixel_brightness), int(b * pixel_brightness))
+        else:
+            # Standard 3-tuple: apply global brightness only
+            return tuple(int(channel * hardware_brightness) for channel in color)
 
     def show(self) -> None:
         """
@@ -225,10 +242,25 @@ class Matrix:
 
     @property
     def brightness(self) -> float:
+        """
+        Get the current brightness level (0.0 to 1.0).
+        
+        Note: For LED protection, brightness is capped at 25% hardware brightness.
+        A user brightness of 1.0 equals 25% hardware brightness (maximum safe level).
+        """
         return self._brightness
 
     @brightness.setter
     def brightness(self, value: float) -> None:
+        """
+        Set the brightness level (0.0 to 1.0).
+        
+        Args:
+            value: Brightness from 0.0 (off) to 1.0 (maximum safe brightness)
+        
+        Note: For LED protection, the hardware is capped at 25% brightness.
+        Setting brightness to 1.0 uses 25% hardware brightness (maximum safe level).
+        """
         self._brightness = _clamp(value)
         # Refresh hardware with new brightness
         if hasattr(self, "_np"):
@@ -238,6 +270,16 @@ class Matrix:
 def set_brightness(value: float) -> float:
     """
     Set brightness (0.0-1.0) for future matrices and update existing ones.
+    
+    Args:
+        value: Brightness from 0.0 (off) to 1.0 (maximum safe brightness)
+    
+    Returns:
+        The clamped brightness value that was set
+    
+    Note: For LED protection, the hardware is capped at 25% brightness.
+    Setting brightness to 1.0 uses 25% hardware brightness (maximum safe level).
+    The default brightness is 0.8 (which equals 20% hardware brightness).
     """
     global _default_brightness
     _default_brightness = _clamp(value)
@@ -273,6 +315,9 @@ def set_grid(grid_data: list) -> None:
                 raise ValueError(f"Row {y} must have {Matrix.WIDTH} columns, got {len(row)}")
             for x, color in enumerate(row):
                 matrix._set_pixel(x, y, color)
+        
+        # Show the grid on the matrix
+        matrix.show()
     else:
         # No matrix instance exists yet - this is okay, the grid will be applied when matrix is created
         pass
